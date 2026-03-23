@@ -6,6 +6,8 @@
 
 //including interfcae and testcase files
 `include "interface.sv"
+`include "intf_valid_ready"
+`include "intf_uart"
 
 //-------------------------[NOTE]---------------------------------
 //Particular testcase can be run by uncommenting, and commenting the rest
@@ -32,22 +34,34 @@ module testbench;
   
   
   //creatinng instance of interface, inorder to connect DUT and testcase
-  mem_intf intf(clk,reset);
-  
+  intf_uart intf_uart(clk,reset);
+  intf_valid_ready intf_valid_ready(clk,reset);
   //Testcase instance, interface handle is passed to test as an argument
-  test t1(intf);
+  test t1(intf_uart);
+  test t2(intf_valid_ready);
   
   //DUT instance, interface signals are connected to the DUT ports
-  memory DUT (
-    .clk(intf.clk),
-    .reset(intf.reset),
-    .addr(intf.addr),
-    .wr_en(intf.wr_en),
-    .rd_en(intf.rd_en),
-    .wdata(intf.wdata),
-    .rdata(intf.rdata)
-   );
-  
+
+uart #(
+
+
+)dut  #(
+.DATA_WIDTH(),
+.FIFO_DEPTH(),
+.BOUD_RATE(),    // asta inseamna ca BOUD_RATE este 2^(20+3) 
+.HAS_PARITY(),
+.NO_BITS_STOP()  // 0 = 1 bit de stop, 1 = 1,5 biti de stop si 2 = 2 biti de stop
+) dut(
+.clk    (intf_valid_ready.clk),
+  .rst_n  (intf_valid_ready.rst_n),
+
+  .valid  (intf_valid_ready.valid),
+  .ready  (intf_valid_ready.ready),
+  .data_i (intf_valid_ready.data_i),
+
+  .tx     ( intf_uart.tx)
+               
+);
   //enabling the wave dump
   initial begin 
     $dumpfile("dump.vcd"); $dumpvars;

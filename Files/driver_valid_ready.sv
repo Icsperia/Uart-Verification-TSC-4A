@@ -8,7 +8,7 @@
 //ceva de clocking block
 //se declara macro-ul DRIV_IF care va reprezenta interfata pe care driverul va trimite date DUT-ului
 `define DRIV_IF virtual_intf.DRIVER.driver_cb
-class driver;
+class driver_valid_ready;
   
   //used to count the number of transactions
   int no_transactions;

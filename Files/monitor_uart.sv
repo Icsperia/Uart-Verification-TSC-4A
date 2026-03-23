@@ -6,7 +6,7 @@
 
 //in macro-ul MON_IF se retine blocul de semnale de unde monitorul extrage datele
 `define MON_IF uart_vif.MONITOR.monitor_cb 
-class monitor_uart;
+class mon_uart;
   parameter DATA_LENGTH = 9;
   //creating virtual interface handle
   bit [DATA_LENGTH-1:0] uart_data;
