@@ -3,11 +3,11 @@
 //-------------------------------------------------------------------------
 
 //in mediul de verificare se instantiaza toate componentele de verificare
-`include "transaction.sv"
-`include "generator.sv"
-`include "driver_valid_ready_uart.sv"
-`include "monitor_uart.sv"
-`include "monitor_valid_ready.sv"
+//`include "transaction.sv"
+//`include "generator.sv"
+//`include "driver_valid_ready.sv"
+//`include "monitor_uart.sv"
+//`include "monitor_valid_ready.sv"
 // `include "coverage.sv"
 // `include "scoreboard.sv"
 class environment;
@@ -79,7 +79,7 @@ class environment;
     pre_test();
     test();
     post_test();
-    report();
+    //report();
     //linia de mai jos este necesara pentru ca simularea sa sa termine
     $finish;
   endtask

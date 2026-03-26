@@ -9,7 +9,7 @@
 class mon_valid_ready;
   
   //creating virtual interface handle
-  virtual valid_ready_intf valid_ready_vif;
+  virtual intf_valid_ready valid_ready_vif;
   
   //se creaza portul prin care monitorul trimite scoreboardului datele colectate de pe interfata DUT-ului sub forma de tranzactii 
   //creating mailbox handle
@@ -18,7 +18,7 @@ class mon_valid_ready;
   int cnt_dly;
   //cand se creaza obiectul de tip monitor (in fisierul environment.sv), interfata de pe care acesta colecteaza date este conectata la interfata reala a DUT-ului
   //constructor
-  function new(virtual valid_ready_intf valid_ready_vif,mailbox mon2scb, int cnt_dly=0);
+  function new(virtual intf_valid_ready valid_ready_vif,mailbox mon2scb, int cnt_dly=0);
     //getting the interface
     this.valid_ready_vif = valid_ready_vif;
     //getting the mailbox handles from  environment 
@@ -36,9 +36,9 @@ class mon_valid_ready;
       //datele sunt citite pe frontul de ceas, informatiile preluate de pe semnale fiind retinute in oboiectul de tip tranzactie
       @(posedge valid_ready_vif.MONITOR.clk);
 	  //conditia de transfer a datelor
-      wait(`MON_IF.valid_i && `MON_IF.ready_o);
-        trans.valid_i  = `MON_IF.valid_i;
-        trans.ready_o = `MON_IF.ready_o;
+      wait(`MON_IF.valid && `MON_IF.ready);
+        trans.valid  = `MON_IF.valid;
+        trans.ready = `MON_IF.ready;
         trans.data_i = `MON_IF.data_i;
 		
       // dupa ce s-au retinut informatiile referitoare la o tranzactie, continutul obiectului trans se trimite catre scoreboard

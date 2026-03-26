@@ -14,13 +14,13 @@ class generator;
   mailbox gen2driv;
   
   //declararea unui eveniment
-  event ended;
+  event gen_ended;
   
   //constructor
-  function new(mailbox gen2driv,event ended);
+  function new(mailbox gen2driv,event gen_ended);
     //getting the mailbox handle from env, in order to share the transaction packet between the generator and driver, the same mailbox is shared between both.
     this.gen2driv = gen2driv;
-    this.ended    = ended;
+    this.gen_ended    = gen_ended;
     trans = new();
   endfunction
   
@@ -34,7 +34,7 @@ class generator;
     	gen2driv.put(tr);
     end
     //se semnaleaza sfarsitul transmiterii datelor de catre generator
-    -> ended; 
+    ->gen_ended; 
   endtask
   
 endclass
