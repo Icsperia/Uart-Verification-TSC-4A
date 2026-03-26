@@ -4,12 +4,12 @@
 
 //aici se declara tipul de data folosit pentru a stoca datele vehiculate intre generator si driver; monitorul, de asemenea, preia datele de pe interfata, le recompune folosind un obiect al acestui tip de data, si numai apoi le proceseaza
 class transaction;
-  parameter DATA_WIDTH = 8 
+  parameter DATA_WIDTH = 8;
   
   //se declara atributele clasei
   //campurile declarate cu cuvantul cheie rand vor primi valori aleatoare la aplicarea functiei randomize()
 
-  rand bit [DATA_WIDTH-1:0] data_i; 
+   bit [DATA_WIDTH-1:0] data_i; 
   rand bit valid;
        bit ready;
        bit tx;

@@ -6,7 +6,9 @@
 
 //in macro-ul MON_IF se retine blocul de semnale de unde monitorul extrage datele
 `define MON_IF uart_vif.MONITOR.monitor_cb 
-class monitor_uart;
+//`include "transaction.sv"
+class mon_uart;
+virtual intf_uart uart_vif; 
   parameter DATA_LENGTH = 9;
   //creating virtual interface handle
   bit [DATA_LENGTH-1:0] uart_data;
@@ -43,7 +45,7 @@ class monitor_uart;
           uart_data[i] = `MON_IF.tx;
         end
 		
-	    if(has_parity == 1)
+	    if(has_parity == 1)begin
              @(posedge uart_vif.MONITOR.clk);
 	     // parity bit passed 
 		end
