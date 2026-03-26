@@ -37,8 +37,7 @@ module testbench;
   intf_uart intf_uart(clk,reset);
   intf_valid_ready intf_valid_ready(clk,reset);
   //Testcase instance, interface handle is passed to test as an argument
-//  test t1(intf_uart);
-//  test t2(intf_valid_ready);
+    test t1(intf_uart, intf_valid_ready);
   
   //DUT instance, interface signals are connected to the DUT ports
 

@@ -1,6 +1,7 @@
 //-------------------------------------------------------------------------
 //						www.verificationguide.com
 //-------------------------------------------------------------------------
+`include "uart.v"
 interface intf_uart(input logic clk,reset);
   
     //declaring the signals
@@ -42,7 +43,7 @@ interface intf_uart(input logic clk,reset);
     
 //verificare tx in starea de repaus == 1
 	property tx_repaus;
-      @(posedge clk) disable iff (!rst_n)
+      @(posedge clk) disable iff (!reset)
       (uart.current_state == `WAIT_TRANSACTION) |-> (tx == 1'b1);
     endproperty
 	
@@ -61,7 +62,7 @@ interface intf_uart(input logic clk,reset);
 	
 //verificare integritate date -> daca tx == bitul selectat din fifo
 	property tx_data_integrity;
-      @(posedge clk) disable iff (!rst_n)
+      @(posedge clk) disable iff (!reset)
       (uart.current_state == `DATA) |-> (tx == uart.fifo[uart.r_counter][uart.bit_cnt]);
     endproperty
 	
@@ -70,7 +71,7 @@ interface intf_uart(input logic clk,reset);
     
 //avem bit de paritate
     property tx_parity_bit;
-        @(posedge clk) disable iff (!rst_n || uart.HAS_PARITY == 0)
+        @(posedge clk) disable iff (!reset || uart.HAS_PARITY == 0)
         (uart.current_state == `PARITY) |-> (tx == ^(uart.fifo[uart.r_counter]));
     endproperty
 	
@@ -89,7 +90,7 @@ interface intf_uart(input logic clk,reset);
 	
 //stabilitatea bitului pe durata boud_rate_counter
     property tx_bit_stability;
-        @(posedge clk) disable iff (!rst_n)
+        @(posedge clk) disable iff (!reset)
         (uart.current_state != `WAIT_TRANSACTION && uart.boud_rate_counter > 0) |-> $stable(tx);
     endproperty
 	

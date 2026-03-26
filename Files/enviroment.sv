@@ -10,6 +10,8 @@
 //`include "monitor_valid_ready.sv"
 // `include "coverage.sv"
 // `include "scoreboard.sv"
+`ifndef ENVIRONMENT_SV 
+`define ENVIRONMENT_SV
 class environment;
   
   //componentele de verificare sunt declarate
@@ -38,7 +40,7 @@ class environment;
     this.vintf_valid_ready = vintf_valid_ready;
     //creating the mailbox (Same handle will be shared across generator and driver)
     gen2driv = new();
-    //mon2scb  = new();
+    mon2scb  = new();
     
     //componentele de verificare sunt create
     //creating generator and driver
@@ -86,3 +88,4 @@ class environment;
   
 endclass
 
+`endif
