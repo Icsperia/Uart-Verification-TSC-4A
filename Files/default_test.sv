@@ -7,7 +7,7 @@
 `define DEFAULT_TEST_SV
 
 `include "enviroment.sv"
-
+// `include "transaction.sv"
 program test(intf_uart intf_uart, intf_valid_ready intf_valid_ready);
 
   class my_trans extends transaction;
