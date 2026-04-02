@@ -1,5 +1,5 @@
 //prin coverage, putem vedea ce situatii (de exemplu, ce tipuri de tranzactii) au fost generate in simulare; astfel putem masura stadiul la care am ajuns cu verificarea
-`include "transaction.sv"
+//`include "transaction.sv"
 class coverage #(parameter DATA_WIDTH = 8);
   
   transaction trans_covered;
