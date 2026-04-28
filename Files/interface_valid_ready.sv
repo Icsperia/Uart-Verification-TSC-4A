@@ -7,14 +7,14 @@ parameter DATA_WIDTH=8
     input logic reset
     );
  logic [DATA_WIDTH-1:0] data_i;
- logic  valid; 
- logic ready;
+ logic  valid ; 
+ logic ready ;
   //semnalele din clocking block sunt sincrone cu frontul crescator de ceas
   //driver clocking block
   clocking driver_cb @(posedge clk);
     //semnalele de intrare sunt citite o unitate de timp inainte frontului de ceas, iar semnalele de iesire sunt citite o unitate de timp dupa frontul de ceas; astfel se elimina situatiile in care se fac scrieri sau citiri in acelasi timp
     default input #1 output #1;
-    output  data_i;
+  output  data_i;
 	output valid;
 	input ready;
   endclocking
@@ -22,7 +22,7 @@ parameter DATA_WIDTH=8
   //monitor clocking block
   clocking monitor_cb @(posedge clk);
     default input #1 output #1;
-	input  data_i;
+	input data_i;
 	input valid; 
 	input ready;
 	  
@@ -58,7 +58,7 @@ parameter DATA_WIDTH=8
   // 3.valid nu are voie sa fie x sau z, adica nedeterminate
    property valid_cunoscut;
     @(posedge clk) disable iff (reset==0)
-    !$isunknown(valid);
+   ##1 !$isunknown(valid);
   endproperty
   
   asertia_valid_cunoscut: assert property (valid_cunoscut) 
@@ -68,7 +68,7 @@ parameter DATA_WIDTH=8
 	//4.ready nu are voie sa fie X sau Z (nedeterminat) niciodata
   property ready_cunoscut;
     @(posedge clk) disable iff (reset==0)
-    !$isunknown(ready);
+    ##1 !$isunknown(ready);
   endproperty
 
   asertia_ready_cunoscut: assert property (ready_cunoscut)
@@ -96,10 +96,10 @@ parameter DATA_WIDTH=8
   //7.dupa iesirea din reset, ready_o trebuie sa fie 0
   property ready_dupa_reset;
     @(posedge clk)
-    $rose(reset) |-> !ready;
+   $rose(reset) |-> !$isunknown(ready);
   endproperty
 
   asertia_ready_dupa_reset: assert property (ready_dupa_reset)
-    else $error("A picat asertia asertia_ready_dupa_reset");
+    else $error("Eroare: ready a fost %b la iesirea din reset!", ready);
 
 endinterface

@@ -6,6 +6,7 @@ interface intf_uart(input logic clk,reset);
   
     //declaring the signals
     logic tx;
+    //logic [1:0] current_state;
     //logic wr_en;
     //logic rd_en;
     //logic [7:0] wdata;
@@ -53,7 +54,7 @@ interface intf_uart(input logic clk,reset);
 //verificare bit de start == 0 
     property tx_bit_start;
       @(posedge clk) disable iff (reset==0)
-      (uart.current_state == `START) |-> (tx==1'b0);
+      (uart.current_state == `START && uart.boud_rate_counter>1) |-> (tx==1'b0);
     endproperty
     
     asertia_tx_bit_start: assert property (tx_bit_start) 
@@ -63,7 +64,7 @@ interface intf_uart(input logic clk,reset);
 //verificare integritate date -> daca tx == bitul selectat din fifo
 	property tx_data_integrity;
       @(posedge clk) disable iff (!reset)
-      (uart.current_state == `DATA) |-> (tx == uart.fifo[uart.r_counter][uart.bit_cnt]);
+      (uart.current_state == `DATA && uart.boud_rate_counter>0) |-> (tx == uart.fifo[uart.r_counter][uart.bit_cnt]);
     endproperty
 	
     asertia_tx_data_integrity: assert property (tx_data_integrity) 
@@ -81,7 +82,7 @@ interface intf_uart(input logic clk,reset);
 //biti de stop
     property tx_bit_stop;
       @(posedge clk) disable iff (reset==0)
-      (uart.current_state == `STOP) |-> (tx==1'b1);
+      (uart.current_state == `STOP && uart.boud_rate_counter>0) |-> (tx==1'b1);
     endproperty
     
     asertia_tx_bit_stop: assert property (tx_bit_stop) 
@@ -91,10 +92,24 @@ interface intf_uart(input logic clk,reset);
 //stabilitatea bitului pe durata boud_rate_counter
     property tx_bit_stability;
         @(posedge clk) disable iff (!reset)
-        (uart.current_state != `WAIT_TRANSACTION && uart.boud_rate_counter > 0) |-> $stable(tx);
+        (uart.current_state != `WAIT_TRANSACTION && uart.boud_rate_counter > 2) |-> $stable(tx);
     endproperty
 	
     asertia_tx_bit_stability: assert property (tx_bit_stability) 
 	   else $error("UART_ERR: Semnalul tx s-a schimbat inainte de finalizarea baud rate");
 
+// always @(posedge clk) begin
+//     if (uart.current_state == `DATA) begin
+//         $strobe("[%0t ns] |DEBUG: tx=%b | FIFO_bit=%b  | Bit_cnt=%0d",
+//                  $time, tx, uart.fifo[uart.r_counter][uart.bit_cnt], 
+//                 uart.bit_cnt);
+//     end
+// end
+
+// always @(posedge clk) begin
+//     if (uart.current_state == `START) begin
+//         $strobe("[%0t ns] START_DEBUG: tx=%b, counter=%0d", 
+//                  $time, tx, uart.boud_rate_counter);
+//     end
+// end
 endinterface

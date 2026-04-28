@@ -14,6 +14,9 @@
 //`include "random_test.sv"
 //`include "wr_rd_test.sv"
 `include "default_test.sv"
+`include "fifo_test.sv"
+`include "wait_trans.sv"
+`include "stop_bit.sv"
 //----------------------------------------------------------------
 
 
@@ -28,8 +31,8 @@ module testbench;
   
   //reset Generation
   initial begin
-    reset = 1;
-    #15 reset =0;
+    reset = 0;
+    #15 reset = 1;
   end
   
   
@@ -37,8 +40,10 @@ module testbench;
   intf_uart intf_uart(clk,reset);
   intf_valid_ready intf_valid_ready(clk,reset);
   //Testcase instance, interface handle is passed to test as an argument
-    test t1(intf_uart, intf_valid_ready);
-  
+  //test t1(intf_uart, intf_valid_ready);
+ // fifo_test t2(intf_uart, intf_valid_ready);
+  //wait_trans t3(intf_uart, intf_valid_ready);
+  stop_bit t4(intf_uart, intf_valid_ready);
   //DUT instance, interface signals are connected to the DUT ports
 
 uart #(

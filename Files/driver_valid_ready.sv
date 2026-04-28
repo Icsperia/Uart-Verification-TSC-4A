@@ -7,7 +7,7 @@
 
 //ceva de clocking block
 //se declara macro-ul DRIV_IF care va reprezenta interfata pe care driverul va trimite date DUT-ului
-`define DRIV_IF virtual_intf_valid_ready.DRIVER.driver_cb
+`define DRIV_IF virtual_intf_valid_ready.driver_cb
 class driver_valid_ready;
   
   //used to count the number of transactions
@@ -31,11 +31,11 @@ class driver_valid_ready;
   
   //Reset task, Reset the Interface signals to default/initial values
   task reset;
-    wait(virtual_intf_valid_ready.reset);
+    wait(!virtual_intf_valid_ready.reset);
     $display("--------- [DRIVER] Reset Started ---------");
     `DRIV_IF.valid <= 0;
     `DRIV_IF.data_i <= 0;
-    wait(!virtual_intf_valid_ready.reset);
+    wait( virtual_intf_valid_ready.reset);
     $display("--------- [DRIVER] Reset Ended ---------");
   endtask
   
@@ -56,8 +56,12 @@ class driver_valid_ready;
         `DRIV_IF.data_i<=trans.data_i;
   
         $display("\tvalid = %0h, \tdata_i = %0h ",trans.valid, trans.data_i);
-        @(posedge virtual_intf_valid_ready.DRIVER.clk);
-    
+        do begin
+      @(posedge virtual_intf_valid_ready.DRIVER.clk);
+        end while (`DRIV_IF.ready !==1'b1);
+        `DRIV_IF.valid <=1'b0;
+  
+      $display("--------- [TRANSFER FINALIZAT CU SUCCES] ---------");
       $display("-----------------------------------------");
       no_transactions++;
   endtask

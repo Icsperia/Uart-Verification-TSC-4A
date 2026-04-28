@@ -20,12 +20,12 @@ class environment;
   driver_valid_ready    driv_valid_ready;
   mon_valid_ready    mon_valid_ready;
   mon_uart   mon_uart;
-
+  coverage cov;
   
   //mailbox handle's
   mailbox gen2driv;
   mailbox mon2scb;
-  
+  mailbox mon2cov;
   //event for synchronization between generator and test
   event gen_ended;
   
@@ -41,7 +41,8 @@ class environment;
     //creating the mailbox (Same handle will be shared across generator and driver)
     gen2driv = new();
     mon2scb  = new();
-    
+
+    cov = new( );
     //componentele de verificare sunt create
     //creating generator and driver
     gen  = new(gen2driv,gen_ended);
@@ -61,7 +62,8 @@ class environment;
     gen.main();
     driv_valid_ready.main();
     mon_valid_ready.main();
-    mon_uart.main();      
+    mon_uart.main();    
+ 
     join_any
   endtask
   
