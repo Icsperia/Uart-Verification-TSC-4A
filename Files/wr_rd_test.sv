@@ -7,7 +7,7 @@ program test(mem_intf intf);
   class my_trans extends transaction;
     
     bit [1:0] count;
-    
+
     function void pre_randomize();
       wr_en.rand_mode(0);
       rd_en.rand_mode(0);

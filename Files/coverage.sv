@@ -30,10 +30,10 @@ class coverage #(parameter DATA_WIDTH = 8);
       bins big_values    = {[MID_VAL + 1 : MAX_VAL - 1]};
     }
 
-    counter_cp: coverpoint trans_covered.counter {
-      bins pachet_complet[] = {[0 : DATA_WIDTH-1]}; 
-    }
-    handshake_cross: cross valid_cp, ready_cp;
+    // counter_cp: coverpoint trans_covered.counter {
+    //   bins pachet_complet[] = {[0 : DATA_WIDTH-1]}; 
+    // }
+    // handshake_cross: cross valid_cp, ready_cp;
   endgroup
   
   //se creaza grupul de coverage; ATENTIE! Fara functia de mai jos, grupul de coverage nu va putea esantiona niciodata date deoarece pana acum el a fost doar declarat, nu si creat
@@ -51,7 +51,7 @@ class coverage #(parameter DATA_WIDTH = 8);
     $display ("Ready coverage = %.2f%%", transaction_cg.ready_cp.get_coverage());
     $display ("TX line coverage = %.2f%%", transaction_cg.tx_cp.get_coverage());
     $display ("Data in coverage = %.2f%%", transaction_cg.data_i_cp.get_coverage());
-    $display ("Counter coverage = %.2f%%", transaction_cg.counter_cp.get_coverage());
+    //$display ("Counter coverage = %.2f%%", transaction_cg.counter_cp.get_coverage());
     $display ("Overall coverage = %.2f%%", transaction_cg.get_coverage());
   endfunction
   

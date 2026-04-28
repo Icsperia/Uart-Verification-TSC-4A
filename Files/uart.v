@@ -43,7 +43,7 @@ reg [FIFO_DEPTH-1:0] no_fifo_elements;
 reg   [3-1:0]        current_state; 
 reg   [3-1:0]        next_state; 
 wire  [6-1:0]        boud_rate_counter;
-reg   [32-1:0]        data_i_cnt;
+reg   [32-1:0]       data_i_cnt;
 
 // configurare semnal ready si semnale ajutatoare
 assign ready = ~fifo_full;

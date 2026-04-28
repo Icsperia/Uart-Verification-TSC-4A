@@ -9,7 +9,7 @@ class transaction;
   //se declara atributele clasei
   //campurile declarate cu cuvantul cheie rand vor primi valori aleatoare la aplicarea functiei randomize()
 
-   bit [DATA_WIDTH-1:0] data_i; 
+  rand bit [DATA_WIDTH-1:0] data_i; 
   rand bit valid;
        bit ready;
        bit tx;
