@@ -25,7 +25,7 @@ class transaction;
   
     function void post_randomize();
     $display("--------- [Trans] post_randomize ------");
-    if(valid) $display("\t valid = %0h\t data_i = %0h\t delay = %0h",valid,data_i,delay);
+    if(valid) $display("\t valid = %0h\t data_i = %0h\t delay = %0d",valid,data_i,delay);
     $display("-----------------------------------------");
   endfunction
   //operator de copiere a unui obiect intr-un alt obiect (deep copy)

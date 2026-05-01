@@ -1,12 +1,13 @@
 `ifndef STOP_BIT_SV
 `define STOP_BIT_SV
 
+//cu delay mare
 program stop_bit(intf_uart uart, intf_valid_ready intf_valid_ready);
 
   class my_trans extends transaction;
     parameter DATA_WIDTH = 8;
     
-
+//de verificat bitul de paritate
     rand bit [1:0] stop_type;
     
     bit start = 1'b0;
@@ -14,20 +15,6 @@ program stop_bit(intf_uart uart, intf_valid_ready intf_valid_ready);
     bit [1:0] stop_bits_val;
     bit [11:0] uart_frame;   
     int cnt = 0;
-    // rand bit valid;
-    // rand bit ready;
-    // function void pre_randomize(); 
-    //   valid.rand_mode(0); 
-    //   ready.rand_mode(0);
-   
-    //  if(cnt % 4 != 3) begin 
-    //     valid = 1;
-    // end else begin
-    //     valid = 0;
-    // end
-    
-    // cnt++;
-    // endfunction
 
     constraint c_stop {
       stop_type inside {1, 2, 3};
@@ -79,3 +66,5 @@ program stop_bit(intf_uart uart, intf_valid_ready intf_valid_ready);
 endprogram
 
 `endif
+
+//test de baudrate

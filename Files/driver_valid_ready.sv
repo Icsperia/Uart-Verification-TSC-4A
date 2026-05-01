@@ -49,6 +49,7 @@ class driver_valid_ready;
     
     //daca nu are date de la generator, driverul ramane cu executia la linia de mai jos, pana cand primeste respectivele date
       gen2driv.get(trans);
+      repeat(trans.delay) @(posedge virtual_intf_valid_ready.DRIVER.clk);
       $display("--------- [DRIVER-TRANSFER: %0d] ---------",no_transactions);
       @(posedge virtual_intf_valid_ready.DRIVER.clk);
 
@@ -60,6 +61,7 @@ class driver_valid_ready;
       @(posedge virtual_intf_valid_ready.DRIVER.clk);
         end while (`DRIV_IF.ready !==1'b1);
         `DRIV_IF.valid <=1'b0;
+  
   
       $display("--------- [TRANSFER FINALIZAT CU SUCCES] ---------");
       $display("-----------------------------------------");

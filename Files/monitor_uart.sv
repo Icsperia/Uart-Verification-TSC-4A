@@ -3,7 +3,7 @@
 //-------------------------------------------------------------------------
 //monitorul urmareste traficul de pe interfetele DUT-ului, preia datele verificate si recompune tranzactiile (folosind obiecte ale clasei transaction); in implementarea de fata, datele preluate de pe interfete sunt trimise scoreboardului pentru verificare
 //Samples the interface signals, captures into transaction packet and send the packet to scoreboard.
-
+`include "coverage_uart.sv"
 //in macro-ul MON_IF se retine blocul de semnale de unde monitorul extrage datele
 `define MON_IF uart_vif.MONITOR.monitor_cb 
 //`include "transaction.sv"
@@ -15,16 +15,18 @@ virtual intf_uart uart_vif;
   int                   i;           
   bit                   has_parity;
   
+  coverage_uart cov;
   //se creaza portul prin care monitorul trimite scoreboardului datele colectate de pe interfata DUT-ului sub forma de tranzactii 
   //creating mailbox handle
   mailbox mon2scb;
   
   //cand se creaza obiectul de tip monitor (in fisierul environment.sv), interfata de pe care acesta colecteaza date este conectata la interfata reala a DUT-ului
   //constructor
-  function new(virtual intf_uart uart_vif, mailbox mon2scb, bit has_parity = 0);
+  function new(virtual intf_uart uart_vif, mailbox mon2scb, bit has_parity = 0, coverage_uart cov);
     this.uart_vif    = uart_vif;
     this.mon2scb     = mon2scb;
     this.has_parity  = has_parity;
+    this.cov  = cov;
   endfunction
   
   //Samples the interface signal and send the sample packet to scoreboard
@@ -36,7 +38,13 @@ virtual intf_uart uart_vif;
 
         //datele sunt citite pe frontul de ceas, informatiile preluate de pe semnale fiind retinute in oboiectul de tip tranzactie
         //@(posedge mem_vif.MONITOR.clk);
-	    @(negedge uart_vif.MONITOR.monitor_cb.tx); // transaction started on tx line
+        while(uart_vif.MONITOR.monitor_cb.tx)begin
+          @(posedge uart_vif.MONITOR.clk);
+          trans.delay++;
+        end
+	   // @(negedge uart_vif.MONITOR.monitor_cb.tx); 
+     
+    cov.sample_tx_function(trans);//s-a apelat aici inregistrarea tranzactiei pentru a obtine coverage 100% pe linia tx;
         @(posedge uart_vif.MONITOR.clk);// Lungimea unui bit pe uart - conform baud rate
 	     //start bit passed
 		 
@@ -55,8 +63,9 @@ virtual intf_uart uart_vif;
 	    //enter idle state
   
 		trans.data_i = uart_data;
+    cov.sample_function(trans);
         // dupa ce s-au retinut informatiile referitoare la o tranzactie, continutul obiectului trans se trimite catre scoreboard
-        mon2scb.put(trans);
+       mon2scb.put(trans);
     end
   endtask
   

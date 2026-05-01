@@ -1,3 +1,11 @@
+`ifndef PARITY_BIT_SIMULATION
+`define PARITY_BIT_SIMULATION 0
+`endif
+
+`ifndef BAUDRATE_MODE_SIMULATOR
+`define BAUDRATE_MODE_SIMULATOR 2
+`endif 
+
 //-------------------------------------------------------------------------
 //				www.verificationguide.com   testbench.sv
 //-------------------------------------------------------------------------
@@ -17,6 +25,7 @@
 `include "fifo_test.sv"
 `include "wait_trans.sv"
 `include "stop_bit.sv"
+`include "send_data_with_delay.sv"
 //----------------------------------------------------------------
 
 
@@ -41,16 +50,18 @@ module testbench;
   intf_valid_ready intf_valid_ready(clk,reset);
   //Testcase instance, interface handle is passed to test as an argument
   //test t1(intf_uart, intf_valid_ready);
- // fifo_test t2(intf_uart, intf_valid_ready);
+  //fifo_test t2(intf_uart, intf_valid_ready);
   //wait_trans t3(intf_uart, intf_valid_ready);
-  stop_bit t4(intf_uart, intf_valid_ready);
+  //stop_bit t4(intf_uart, intf_valid_ready);
+
+  send_data_with_delay t5(intf_uart, intf_valid_ready);
   //DUT instance, interface signals are connected to the DUT ports
 
 uart #(
   .DATA_WIDTH(8),
   .FIFO_DEPTH(16),
   .BOUD_RATE(1), 
-  .HAS_PARITY(0),
+  .HAS_PARITY(`PARITY_BIT_SIMULATION),
   .NO_BITS_STOP(0)
 ) dut (
   .clk     (intf_valid_ready.clk),
