@@ -20,7 +20,8 @@ class environment;
   driver_valid_ready    driv_valid_ready;
   mon_valid_ready    mon_valid_ready;
   mon_uart   mon_uart;
-  coverage cov;
+  coverage_uart cov_uart;
+  coverage_valid_ready cov_valid_ready;
   
   //mailbox handle's
   mailbox gen2driv;
@@ -42,13 +43,16 @@ class environment;
     gen2driv = new();
     mon2scb  = new();
 
-    cov = new( );
+    cov_uart = new( );
+    cov_valid_ready = new();
     //componentele de verificare sunt create
     //creating generator and driver
     gen  = new(gen2driv,gen_ended);
     driv_valid_ready = new(vintf_valid_ready,gen2driv);
-    mon_valid_ready  = new(vintf_valid_ready,mon2scb);
-    mon_uart = new(vintf_uart,mon2scb);
+    mon_valid_ready  = new(vintf_valid_ready,mon2scb,0, cov_valid_ready);
+   
+   
+    mon_uart = new(vintf_uart,mon2scb,0, cov_uart);
     // scb  = new(mon2scb);
   endfunction
   
@@ -72,18 +76,20 @@ class environment;
     //se urmareste ca toate datele generate sa fie transmise la DUT si sa ajunga si la scoreboard
     wait(gen.repeat_count ==driv_valid_ready.no_transactions);
     // wait(gen.repeat_count == scb.no_transactions);
+  // #4000
   endtask  
   
-  // function report();
-  //   scb.colector_coverage.print_coverage();
-  // endfunction
+  function report();
+   mon_valid_ready.cov.print_coverage();
+    mon_uart.cov.print_coverage();
+  endfunction
   
   //run task
   task run;
     pre_test();
     test();
     post_test();
-    //report();
+    report();
     //linia de mai jos este necesara pentru ca simularea sa sa termine
     $finish;
   endtask

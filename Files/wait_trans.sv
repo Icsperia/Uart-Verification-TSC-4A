@@ -15,11 +15,11 @@ class my_trans extends transaction;
       valid.rand_mode(0); 
       ready.rand_mode(0);
       
-     if(cnt % 2 == 0) begin 
-        valid = 1;
-    end else begin
-        valid = 0;
-    end
+    //  if(cnt % 2 == 0) begin 
+    //     valid = 1;
+    // end else begin
+    //     valid = 0;
+    // end
     
     cnt++;
     endfunction

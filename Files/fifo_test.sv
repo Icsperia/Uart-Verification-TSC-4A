@@ -11,18 +11,6 @@ class my_trans extends transaction;
     rand bit valid;
     rand bit ready;
 
-    function void pre_randomize(); 
-      valid.rand_mode(0); 
-      ready.rand_mode(0);
-      
-     if(cnt % 4 != 3) begin 
-        valid = 1;
-    end else begin
-        valid = 0;
-    end
-    
-    cnt++;
-    endfunction
 
 
     function void post_randomize();
@@ -31,7 +19,7 @@ class my_trans extends transaction;
                 valid, ready, cnt-1);
     endfunction
     
-
+//fifo full
 
   endclass
   environment env;
@@ -55,8 +43,12 @@ $display("\n[DEBUG] Afisare continut FIFO din testbench.dut:");
 
 
     for (int i = 0; i < 30; i++) begin
-        $display("Index [%0d] = %b", i, testbench.dut.fifo[i]);
-        $display("Current_state: %d", testbench.dut.current_state);
+       $display("Index [%0d] = %h", i, testbench.dut.fifo[i]);
+     //  $display("Starea curenta %d", testbench.dut.current_state);
+        
+      //  $display("Date FIFO = %d", testbench.dut.fifo);
+        //$display("Current_state: %d", testbench.dut.current_state);
+
     end
   end
 
