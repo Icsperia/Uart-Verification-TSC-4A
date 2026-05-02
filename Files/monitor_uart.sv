@@ -1,71 +1,90 @@
 //-------------------------------------------------------------------------
-//						www.verificationguide.com
+//            www.verificationguide.com
 //-------------------------------------------------------------------------
-//monitorul urmareste traficul de pe interfetele DUT-ului, preia datele verificate si recompune tranzactiile (folosind obiecte ale clasei transaction); in implementarea de fata, datele preluate de pe interfete sunt trimise scoreboardului pentru verificare
-//Samples the interface signals, captures into transaction packet and send the packet to scoreboard.
+// Monitorul urmareste traficul de pe interfetele DUT-ului, preia datele brute si 
+// recompune tranzactiile pentru a fi trimise catre scoreboard pentru verificare.
 `include "coverage_uart.sv"
-//in macro-ul MON_IF se retine blocul de semnale de unde monitorul extrage datele
+
+// Definirea unui macro pentru accesul rapid la semnalele esantionate prin clocking block-ul monitorului
 `define MON_IF uart_vif.MONITOR.monitor_cb 
-//`include "transaction.sv"
+
 class mon_uart;
-virtual intf_uart uart_vif; 
+  // Interfata virtuala folosita pentru a accesa semnalele fizice UART (tx, clk)
+  virtual intf_uart uart_vif; 
+  
+  // Parametru care defineste numarul de biti de date esantionati (ex: 8 biti date + 1 paritate)
   parameter DATA_LENGTH = 9;
-  //creating virtual interface handle
+  
+  // Variabila pentru stocarea temporara a bitilor colectati de pe linia seriala
   bit [DATA_LENGTH-1:0] uart_data;
+  
+  // Contor folosit in bucla de colectare a bitilor
   int                   i;           
+  
+  // Indicator pentru prezenta bitului de paritate in fluxul de date
   bit                   has_parity;
   
+  // Obiectul de coverage pentru inregistrarea statisticilor de testare ale interfetei UART
   coverage_uart cov;
-  //se creaza portul prin care monitorul trimite scoreboardului datele colectate de pe interfata DUT-ului sub forma de tranzactii 
-  //creating mailbox handle
+  
+  // Mailbox-ul prin care monitorul trimite tranzactiile recompuse catre scoreboard
   mailbox mon2scb;
   
-  //cand se creaza obiectul de tip monitor (in fisierul environment.sv), interfata de pe care acesta colecteaza date este conectata la interfata reala a DUT-ului
-  //constructor
+  // Constructor: asociaza interfata virtuala, mailbox-ul si obiectul de coverage primite din environment
   function new(virtual intf_uart uart_vif, mailbox mon2scb, bit has_parity = 0, coverage_uart cov);
     this.uart_vif    = uart_vif;
     this.mon2scb     = mon2scb;
     this.has_parity  = has_parity;
-    this.cov  = cov;
+    this.cov         = cov;
   endfunction
   
-  //Samples the interface signal and send the sample packet to scoreboard
+  // Task-ul principal care ruleaza continuu pentru a "asculta" linia TX a UART-ului
   task main;
-    forever begin // tot timpul se uita pe intefata
-        //se declara si se creaza obiectul de tip tranzactie care va contine datele preluate de pe interfata
-        transaction trans; // not used for now
+    forever begin 
+        // Instantierea unui nou obiect de tip tranzactie pentru fiecare cadru detectat
+        transaction trans; 
         trans = new();
 
-        //datele sunt citite pe frontul de ceas, informatiile preluate de pe semnale fiind retinute in oboiectul de tip tranzactie
-        //@(posedge mem_vif.MONITOR.clk);
-        while(uart_vif.MONITOR.monitor_cb.tx)begin
+        // 1. Detectarea starii de IDLE si masurarea pauzei (delay) intre cadre
+        // Atat timp cat linia TX este in '1' (stare idle), monitorul asteapta si numara ciclii de ceas
+        while(uart_vif.MONITOR.monitor_cb.tx) begin
           @(posedge uart_vif.MONITOR.clk);
-          trans.delay++;
+          trans.delay++; // Incrementeaza timpul de asteptare pana la urmatoarea transmisie
         end
-	   // @(negedge uart_vif.MONITOR.monitor_cb.tx); 
-     
-    cov.sample_tx_function(trans);//s-a apelat aici inregistrarea tranzactiei pentru a obtine coverage 100% pe linia tx;
-        @(posedge uart_vif.MONITOR.clk);// Lungimea unui bit pe uart - conform baud rate
-	     //start bit passed
-		 
+        
+        // Inregistreaza tranzactia pentru a monitoriza activitatea liniei TX in coverage
+        cov.sample_tx_function(trans);
+
+        // 2. Sincronizarea dupa detectarea START BIT-ului
+        // Protocolul UART incepe cand TX trece in '0'. Asteptam un ciclu de ceas pentru a trece de bitul de start.
+        @(posedge uart_vif.MONITOR.clk);
+
+        // 3. Colectarea bitilor de DATE
+        // Se parcurge lungimea definita (DATA_LENGTH) si se esantioneaza valoarea TX la fiecare front de ceas
         for (i = DATA_LENGTH-1; i >= 0; i--) begin
           @(posedge uart_vif.MONITOR.clk);
-          uart_data[i] = `MON_IF.tx;
+          uart_data[i] = `MON_IF.tx; // Recompunerea vectorului de date din fluxul serial
         end
-		
-	    if(has_parity == 1)begin
+    
+        // 4. Gestionarea bitului de PARITATE (optional)
+        if(has_parity == 1) begin
              @(posedge uart_vif.MONITOR.clk);
-	     // parity bit passed 
-		end
-		
-	    @(posedge uart_vif.MONITOR.clk);
-	    // stop bit passed
-	    //enter idle state
+             // Aici bitul de paritate a fost parcurs
+        end
+    
+        // 5. Finalizarea cadrului prin STOP BIT
+        // UART termina transmisia cu bitul de stop (revenirea in '1'). Asteptam finalizarea acestuia.
+        @(posedge uart_vif.MONITOR.clk);
   
-		trans.data_i = uart_data;
-    cov.sample_function(trans);
-        // dupa ce s-au retinut informatiile referitoare la o tranzactie, continutul obiectului trans se trimite catre scoreboard
-       mon2scb.put(trans);
+        // 6. Finalizarea tranzactiei si raportarea rezultatelor
+        trans.data_i = uart_data;       // Salveaza datele recompuse in obiectul tranzactie
+        cov.sample_function(trans);     // Colecteaza coverage pe datele efective primite
+        
+        trans.tx = `MON_IF.tx;          // Actualizeaza starea curenta a TX in tranzactie
+        cov.sample_tx_function(trans);  // Inregistreaza starea finala a liniei pentru coverage
+        
+        // Trimite tranzactia completa catre scoreboard prin mailbox pentru validarea finala
+        mon2scb.put(trans);
     end
   endtask
   

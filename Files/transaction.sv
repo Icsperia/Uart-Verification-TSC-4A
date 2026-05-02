@@ -1,44 +1,52 @@
 //-------------------------------------------------------------------------
-//						www.verificationguide.com 
+//            www.verificationguide.com 
 //-------------------------------------------------------------------------
 
-//aici se declara tipul de data folosit pentru a stoca datele vehiculate intre generator si driver; monitorul, de asemenea, preia datele de pe interfata, le recompune folosind un obiect al acestui tip de data, si numai apoi le proceseaza
 class transaction;
+  // Parametru care defineste latimea datelor (implicit 8 biti)
   parameter DATA_WIDTH = 8;
   
-  //se declara atributele clasei
-  //campurile declarate cu cuvantul cheie rand vor primi valori aleatoare la aplicarea functiei randomize()
+  // --- Atributele clasei (Variabile) ---
 
-  rand bit [DATA_WIDTH-1:0] data_i; 
-  rand bit valid;
-       bit ready;
-       bit tx;
+  // Cuvantul cheie 'rand' permite simulatorului sa genereze valori 
+  // aleatorii pentru aceste campuri la apelarea functiei .randomize()
+  rand bit [DATA_WIDTH-1:0] data_i; // Datele de intrare paralele
+  rand bit valid;                   // Semnalul de validare a datelor
+       bit ready;                   // Semnal primit de la DUT (nu este aleatoriu)
+       bit tx;                      // Pinul serial de iesire monitorizat
+  
+  // 'delay' este folosit pentru a introduce pauze intre pachete
   rand int unsigned delay;
   
-  //constrangerile reprezinta un tip de membru al claselor din SystemVerilog, pe langa atribute si metode
-  //aceasta constrangere specifica faptul ca se executa fie o scriere, fie o citire
-  //constrangerile sunt aplicate de catre compilator atunci cand atributele clasei primesc valori aleatoare in urma folosirii functiei randomize
+  bit parity; // Bitul de paritate calculat pentru verificare
 
-  //aceasta functie este apelata dupa aplicarea functiei randomize() asupra obiectelor apartinand acestei clase
-  //aceasta functie afiseaza valorile aleatorizate ale atributelor clasei
 
-  
-    function void post_randomize();
+  // Functia 'post_randomize' este executata automat de SystemVerilog 
+  // imediat dupa ce valorile rand au fost generate. 
+  // Este utila pentru afisarea log-urilor sau calcule automate.
+  function void post_randomize();
     $display("--------- [Trans] post_randomize ------");
-    if(valid) $display("\t valid = %0h\t data_i = %0h\t delay = %0d",valid,data_i,delay);
+    // Afisaza detaliile tranzactiei in consola daca pachetul este valid
+    if(valid) 
+      $display("\t valid = %0h\t data_i = %0h\t delay = %0d", valid, data_i, delay);
     $display("-----------------------------------------");
   endfunction
-  //operator de copiere a unui obiect intr-un alt obiect (deep copy)
-  //modificam cu
 
-    function transaction do_copy();
+  // Metoda 'do_copy' realizeaza o copie profunda a obiectului.
+  // In SystemVerilog, obiectele sunt transmise prin referinta (pointer). 
+  // Fara aceasta copie, Generatorul ar modifica datele pe care Driverul 
+  // inca incearca sa le trimita.
+  function transaction do_copy();
     transaction trans;
-    trans = new();
+    trans = new(); // Creeaza o instanta noua (un alt spatiu in memorie)
+    
+    // Copiaza manual fiecare atribut din obiectul curent (this) in cel nou (trans)
     trans.valid   = this.valid;
     trans.data_i  = this.data_i;
     trans.delay   = this.delay;
-    return trans;
+    trans.parity  = this.parity;
+    
+    return trans; // Returneaza noul obiect care este o copie fidela a celui original
   endfunction
+
 endclass
-
-

@@ -22,11 +22,13 @@ program send_data_with_delay(intf_uart uart, intf_valid_ready intf_valid_ready);
 
 
 
-constraint c_delay_mare{
-    delay inside {[100 : 1000]}; 
+constraint c_delay_interval{
+    delay  dist { [1:10] :/ 20, [11:50] :/ 20, [51:100] :/ 20, [101:999] :/ 20, [1000:1999] :/ 10, [2000:3000] :/ 10 };
   }
 
-
+// constraint c_delay_mare{
+//     delay inside {[1000 : 5000]}; 
+//   }
 
 //     constraint c_stop {
 //       stop_type inside {1, 2, 3};
@@ -61,13 +63,13 @@ constraint c_delay_mare{
     my_tr = new();
     
 
-    env.gen.repeat_count = 1000; 
+    env.gen.repeat_count = 2500; 
     env.gen.trans = my_tr;
         env.run();
     $display("\n--- Generare Cadre UART (Debug Mode) ---");
     
-repeat(100) @(posedge uart.clk);
-    repeat(1000) begin
+//repeat(100) @(posedge uart.clk);
+    repeat(2500) begin
      @(posedge uart.clk);
       if (!my_tr.randomize()) $error("Randomization failed!");
       $display(" Data: %h | Stop Type: %0d bits |Current_state: %d |Next_state: %d", 
