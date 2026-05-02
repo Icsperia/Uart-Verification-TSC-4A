@@ -5,32 +5,30 @@
 // recompune tranzactiile pentru a fi trimise catre scoreboard pentru verificare.
 `include "coverage_uart.sv"
 
-// Definirea unui macro pentru accesul rapid la semnalele esantionate prin clocking block-ul monitorului
+// Definim un macro pentru a accesa semnalul TX prin Clocking Block-ul monitorului.
+// Esantionarea prin Clocking Block asigura stabilitatea datelor fata de ceas.
 `define MON_IF uart_vif.MONITOR.monitor_cb 
 
 class mon_uart;
-  // Interfata virtuala folosita pentru a accesa semnalele fizice UART (tx, clk)
+  // Interfata virtuala pentru accesarea semnalelor fizice (tx, clk).
   virtual intf_uart uart_vif; 
   
-  // Parametru care defineste numarul de biti de date esantionati (ex: 8 biti date + 1 paritate)
+  // Parametru: lungimea cadrului (ex: 8 biti date + 1 paritate).
   parameter DATA_LENGTH = 9;
   
-  // Variabila pentru stocarea temporara a bitilor colectati de pe linia seriala
+  // Variabila temporara pentru bitii colectati serial.
   bit [DATA_LENGTH-1:0] uart_data;
   
-  // Contor folosit in bucla de colectare a bitilor
-  int                   i;           
+  int i;           
+  bit has_parity;
   
-  // Indicator pentru prezenta bitului de paritate in fluxul de date
-  bit                   has_parity;
-  
-  // Obiectul de coverage pentru inregistrarea statisticilor de testare ale interfetei UART
+  // Instanta pentru colectarea statisticilor de acoperire (coverage).
   coverage_uart cov;
   
-  // Mailbox-ul prin care monitorul trimite tranzactiile recompuse catre scoreboard
+  // Mailbox pentru comunicarea cu Scoreboard-ul.
   mailbox mon2scb;
   
-  // Constructor: asociaza interfata virtuala, mailbox-ul si obiectul de coverage primite din environment
+  // Constructor: conecteaza componentele din mediu (environment).
   function new(virtual intf_uart uart_vif, mailbox mon2scb, bit has_parity = 0, coverage_uart cov);
     this.uart_vif    = uart_vif;
     this.mon2scb     = mon2scb;
@@ -38,7 +36,9 @@ class mon_uart;
     this.cov         = cov;
   endfunction
   
-  // Task-ul principal care ruleaza continuu pentru a "asculta" linia TX a UART-ului
+
+
+
   task main;
     forever begin 
         // Instantierea unui nou obiect de tip tranzactie pentru fiecare cadru detectat
@@ -46,46 +46,45 @@ class mon_uart;
         trans = new();
 
         // 1. Detectarea starii de IDLE si masurarea pauzei (delay) intre cadre
-        // Atat timp cat linia TX este in '1' (stare idle), monitorul asteapta si numara ciclii de ceas
+        // Esantionare IDLE: Monitorul verifica TX la fiecare front de ceas pana cand linia scade in '0'
         while(uart_vif.MONITOR.monitor_cb.tx) begin
-          @(posedge uart_vif.MONITOR.clk);
-          trans.delay++; // Incrementeaza timpul de asteptare pana la urmatoarea transmisie
+          @(posedge uart_vif.MONITOR.clk); // <--- PUNCT DE ESANTIONARE (IDLE)
+          trans.delay++; 
         end
         
-        // Inregistreaza tranzactia pentru a monitoriza activitatea liniei TX in coverage
+        // Inregistreaza tranzactia in coverage pentru activitatea liniei TX
         cov.sample_tx_function(trans);
 
-        // 2. Sincronizarea dupa detectarea START BIT-ului
-        // Protocolul UART incepe cand TX trece in '0'. Asteptam un ciclu de ceas pentru a trece de bitul de start.
-        @(posedge uart_vif.MONITOR.clk);
+        // 2. Sincronizarea dupa START BIT
+        // UART incepe cand TX trece in '0'. Asteptam un ceas pentru a trece de bitul de start.
+        @(posedge uart_vif.MONITOR.clk); // <--- PUNCT DE ESANTIONARE (START BIT)
 
-        // 3. Colectarea bitilor de DATE
-        // Se parcurge lungimea definita (DATA_LENGTH) si se esantioneaza valoarea TX la fiecare front de ceas
+        // 3. Colectarea bitilor de DATE (Esantionarea bit cu bit)
+        // Se parcurge lungimea definita si se citeste valoarea TX pentru reconstructia octetului
         for (i = DATA_LENGTH-1; i >= 0; i--) begin
-          @(posedge uart_vif.MONITOR.clk);
-          uart_data[i] = `MON_IF.tx; // Recompunerea vectorului de date din fluxul serial
+          @(posedge uart_vif.MONITOR.clk); // <--- PUNCT DE ESANTIONARE (DATA BITS)
+          uart_data[i] = `MON_IF.tx; 
         end
     
-        // 4. Gestionarea bitului de PARITATE (optional)
+        // 4. Gestionarea bitului de PARITATE (Daca este activat)
         if(has_parity == 1) begin
-             @(posedge uart_vif.MONITOR.clk);
-             // Aici bitul de paritate a fost parcurs
+             @(posedge uart_vif.MONITOR.clk); // <--- PUNCT DE ESANTIONARE (PARITY)
         end
     
         // 5. Finalizarea cadrului prin STOP BIT
-        // UART termina transmisia cu bitul de stop (revenirea in '1'). Asteptam finalizarea acestuia.
-        @(posedge uart_vif.MONITOR.clk);
+        // Asteptam revenirea liniei in '1' pentru a marca finalul transmisiei
+        @(posedge uart_vif.MONITOR.clk); // <--- PUNCT DE ESANTIONARE (STOP BIT)
   
         // 6. Finalizarea tranzactiei si raportarea rezultatelor
-        trans.data_i = uart_data;       // Salveaza datele recompuse in obiectul tranzactie
-        cov.sample_function(trans);     // Colecteaza coverage pe datele efective primite
+        trans.data_i = uart_data;
+        cov.sample_function(trans);
         
-        trans.tx = `MON_IF.tx;          // Actualizeaza starea curenta a TX in tranzactie
-        cov.sample_tx_function(trans);  // Inregistreaza starea finala a liniei pentru coverage
+        trans.tx = `MON_IF.tx;          
+        cov.sample_tx_function(trans);  
         
-        // Trimite tranzactia completa catre scoreboard prin mailbox pentru validarea finala
+        // Trimite tranzactia completa catre scoreboard prin mailbox
         mon2scb.put(trans);
-    end
+    end 
   endtask
   
 endclass

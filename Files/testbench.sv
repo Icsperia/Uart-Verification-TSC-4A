@@ -52,13 +52,13 @@ logic clk;
   intf_valid_ready intf_valid_ready(clk,reset);
   //Testcase instance, interface handle is passed to test as an argument
   //test t1(intf_uart, intf_valid_ready);
-  fifo_test t2(intf_uart, intf_valid_ready);
+  //fifo_test t2(intf_uart, intf_valid_ready);
   //wait_trans t3(intf_uart, intf_valid_ready);
   //stop_bit t4(intf_uart, intf_valid_ready);
 
  //send_data_with_delay t5(intf_uart, intf_valid_ready);
 //reset_test t6(intf_uart, intf_valid_ready);
- //start_bit_test t5(intf_uart, intf_valid_ready);
+ start_bit_test t5(intf_uart, intf_valid_ready);
   //DUT instance, interface signals are connected to the DUT ports
 
 uart #(

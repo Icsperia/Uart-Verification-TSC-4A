@@ -98,7 +98,7 @@ parameter DATA_WIDTH=8
   //7.dupa iesirea din reset, ready_o trebuie sa fie 0
   property ready_dupa_reset;
     @(posedge clk)
-   $rose(reset) |-> !$isunknown(ready);
+   $rose(reset) |-> !(ready);
   endproperty
 
   asertia_ready_dupa_reset: assert property (ready_dupa_reset)

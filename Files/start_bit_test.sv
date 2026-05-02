@@ -100,8 +100,6 @@ program start_bit_test(intf_uart uart, intf_valid_ready intf_valid_ready);
       rx_reversed = {rx_data[7], rx_data[6], rx_data[5], rx_data[4],
                      rx_data[3], rx_data[2], rx_data[1], rx_data[0]};
       
-      // Nota: In codul tau original inversarea era facuta manual, 
-      // aici depinde de cum e implementat shift register-ul in DUT.
 
       // 5. Verificare Date
       if (rx_data === data_asteptata) begin // UART trimite LSB primul, deci rx_data e deja ordonat corect

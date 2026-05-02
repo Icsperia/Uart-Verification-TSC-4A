@@ -38,13 +38,13 @@ class transaction;
   // inca incearca sa le trimita.
   function transaction do_copy();
     transaction trans;
-    trans = new(); // Creeaza o instanta noua (un alt spatiu in memorie)
+    trans = new(); // Creeaza o instanta noua 
     
     // Copiaza manual fiecare atribut din obiectul curent (this) in cel nou (trans)
     trans.valid   = this.valid;
     trans.data_i  = this.data_i;
     trans.delay   = this.delay;
-    trans.parity  = this.parity;
+    //trans.parity  = this.parity;
     
     return trans; // Returneaza noul obiect care este o copie fidela a celui original
   endfunction
