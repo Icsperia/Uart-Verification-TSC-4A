@@ -30,13 +30,18 @@ class driver_valid_ready;
   endfunction
   
   //Reset task, Reset the Interface signals to default/initial values
-  task reset;
+task reset;
+    // Asteapta ca semnalul de reset sa devina activ
     wait(!virtual_intf_valid_ready.reset);
-  @(posedge virtual_intf_valid_ready.clk);
+    @(posedge virtual_intf_valid_ready.clk);
     $display("--------- [DRIVER] Reset Started ---------");
+    
+    // Fortam semnalele de control in 0 pentru a preveni transferuri accidentale
     `DRIV_IF.valid <= 0;
     `DRIV_IF.data_i <= 0;
-    wait( virtual_intf_valid_ready.reset);
+    
+    // Asteapta pana cand resetul este eliberat (revine in 1)
+    wait(virtual_intf_valid_ready.reset);
     $display("--------- [DRIVER] Reset Ended ---------");
   endtask
   
@@ -44,31 +49,40 @@ class driver_valid_ready;
   task drive;
       transaction trans;
       
-    //se asteapta ca modulul sa iasa din reset
-     wait(virtual_intf_valid_ready.reset);//linie valabila daca resetul este activ in 0
-    //wait(!virtual_intf_valid_ready.reset);//linie valabila daca resetul este activ in 1
+      // Se asigura ca nu incepem transmiterea daca sistemul este inca in reset
+      wait(virtual_intf_valid_ready.reset);
     
-    //daca nu are date de la generator, driverul ramane cu executia la linia de mai jos, pana cand primeste respectivele date
+      // Preia urmatoarea tranzactie din mailbox. 
+      // Daca mailbox-ul e gol, task-ul se blocheaza aici pana la sosirea datelor.
       gen2driv.get(trans);
+      
+      // Aplica delay-ul specificat in tranzactie (pauza intre transferuri)
       repeat(trans.delay) @(posedge virtual_intf_valid_ready.DRIVER.clk);
-      $display("--------- [DRIVER-TRANSFER: %0d] ---------",no_transactions);
+      
+      $display("--------- [DRIVER-TRANSFER: %0d] ---------", no_transactions);
       @(posedge virtual_intf_valid_ready.DRIVER.clk);
 
-        `DRIV_IF.valid <= trans.valid;
-        `DRIV_IF.data_i<=trans.data_i;
+      //INCEPUT PROTOCOL HANDSHAKE 
+      // Se pun datele pe bus si se activeaza semnalul VALID
+      `DRIV_IF.valid <= trans.valid;
+      `DRIV_IF.data_i <= trans.data_i;
   
-        $display("\tvalid = %0h, \tdata_i = %0h ",trans.valid, trans.data_i);
-        do begin
-      @(posedge virtual_intf_valid_ready.DRIVER.clk);
-        end while (`DRIV_IF.ready !==1'b1);
-        `DRIV_IF.valid <=1'b0;
-  
+      $display("\tvalid = %0h, \tdata_i = %0h ", trans.valid, trans.data_i);
+      
+      // Mecanismul de blocare: Driver-ul asteapta confirmarea de DUT
+      // Bucla se repeta pana cand semnalul READY este detectat ca fiind 1 pe frontul ceasului.
+      do begin
+        @(posedge virtual_intf_valid_ready.DRIVER.clk);
+      end while (`DRIV_IF.ready !== 1'b1);
+      
+      // Odata ce transferul este confirma, VALID se dezactiveaza
+      `DRIV_IF.valid <= 1'b0;
+      // SFARSIT PROTOCOL HANDSHAKE 
   
       $display("--------- [TRANSFER FINALIZAT CU SUCCES] ---------");
       $display("-----------------------------------------");
       no_transactions++;
   endtask
-  
     
   //Cele doua fire de executie de mai jos ruleaza in paralel. Dupa ce primul dintre ele se termina al doilea este intrerupt automat. Daca se activeaza reset-ul, nu se mai transmit date. 
   task main;
