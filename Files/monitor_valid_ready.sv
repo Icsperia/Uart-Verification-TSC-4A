@@ -1,58 +1,74 @@
 //-------------------------------------------------------------------------
-//						www.verificationguide.com
+//            www.verificationguide.com
 //-------------------------------------------------------------------------
-//monitorul urmareste traficul de pe interfetele DUT-ului, preia datele verificate si recompune tranzactiile (folosind obiecte ale clasei transaction); in implementarea de fata, datele preluate de pe interfete sunt trimise scoreboardului pentru verificare
-//Samples the interface signals, captures into transaction packet and send the packet to scoreboard.
+// Monitorul urmareste traficul de pe interfetele DUT-ului, preia datele verificate 
+// si recompune tranzactiile; datele sunt apoi trimise catre scoreboard pentru validare.
+
 `include "coverage_valid_ready.sv"
-//in macro-ul MON_IF se retine blocul de semnale de unde monitorul extrage datele
+
+// Macro pentru accesarea rapida a semnalelor prin Clocking Block-ul de monitorizare
 `define MON_IF valid_ready_vif.MONITOR.monitor_cb
+
 class mon_valid_ready;
   
-  //creating virtual interface handle
+  // Interfata virtuala pentru accesarea semnalelor fizice de Valid/Ready
   virtual intf_valid_ready valid_ready_vif;
   
-  //se creaza portul prin care monitorul trimite scoreboardului datele colectate de pe interfata DUT-ului sub forma de tranzactii 
-  //creating mailbox handle
+  // Mailbox pentru trimiterea tranzactiilor colectate catre Scoreboard
   mailbox mon2scb;
-  //declar cnt
+  
+  // Contor intern pentru masurarea decalajului (delay) in cicluri de ceas
   int cnt_dly;
+  
+  // Obiectul de coverage pentru monitorizarea handshake-ului si a datelor
   coverage_valid_ready cov;
-  //cand se creaza obiectul de tip monitor (in fisierul environment.sv), interfata de pe care acesta colecteaza date este conectata la interfata reala a DUT-ului
-  //constructor
-  function new(virtual intf_valid_ready valid_ready_vif,mailbox mon2scb, int cnt_dly=0, coverage_valid_ready cov);
-    //getting the interface
+
+  // Constructor: conecteaza interfata virtuala, mailbox-ul si obiectul de coverage
+  function new(virtual intf_valid_ready valid_ready_vif, mailbox mon2scb, int cnt_dly=0, coverage_valid_ready cov);
     this.valid_ready_vif = valid_ready_vif;
-    //getting the mailbox handles from  environment 
     this.mon2scb = mon2scb;
-	this.cnt_dly= cnt_dly;
-  this.cov = cov;
+    this.cnt_dly = cnt_dly;
+    this.cov = cov;
   endfunction
   
-  //Samples the interface signal and send the sample packet to scoreboard
+  // Task-ul principal: extrage datele de pe interfata si le trimite catre scoreboard
   task main;
-    forever begin//tot timpul se uita pe interfata
-      //se declara si se creaza obiectul de tip tranzactie care va contine datele preluate de pe interfata
+    forever begin // Bucla infinita pentru monitorizarea continua a interfetei
+      // Crearea unui nou obiect tranzactie pentru fiecare transfer detectat
       transaction trans;
       trans = new();
+      
+      // Resetarea contorului de delay la inceputul fiecarei cautari de transfer
+      cnt_dly = 0;
 
-      //datele sunt citite pe frontul de ceas, informatiile preluate de pe semnale fiind retinute in oboiectul de tip tranzactie
+      // Sincronizare pe frontul crescator al ceasului de monitorizare
       @(posedge valid_ready_vif.MONITOR.clk);
-	  //conditia de transfer a datelor
+
+      // Asteapta conditia de transfer: atat VALID cat si READY trebuie sa fie '1' simultan
       wait(`MON_IF.valid && `MON_IF.ready);
-        trans.valid  = `MON_IF.valid;
-        trans.ready = `MON_IF.ready;
-        trans.data_i = `MON_IF.data_i;
-		
-    cov.sample_function(trans);
-      // dupa ce s-au retinut informatiile referitoare la o tranzactie, continutul obiectului trans se trimite catre scoreboard
-        mon2scb.put(trans);
+      
+      // Capturarea valorilor semnalelor in obiectul tranzactie
+      trans.valid  = `MON_IF.valid;
+      trans.ready  = `MON_IF.ready;
+      trans.data_i = `MON_IF.data_i;
+      
+      // Salvarea numarului de cicluri de ceas scurse pana la transfer
+      trans.delay  = cnt_dly;
+
+      // Trimiterea tranzactiei catre scoreboard prin mailbox
+      mon2scb.put(trans);
+      
+      // Colectarea statisticilor de coverage pentru tranzactia curenta
+      cov.sample_function(trans);
     end
   endtask
-//control de cicluri de ceas sa se vada ca functioneaza
+
+  // Task pentru numararea cicliilor de ceas; ajuta la masurarea timpului intre evenimente
   task delay_cnt();
-	 forever begin
-		@(posedge valid_ready_vif.MONITOR.clk);
-		cnt_dly++;
-	end
+    forever begin
+      @(posedge valid_ready_vif.MONITOR.clk);
+      cnt_dly++; // Incrementeaza contorul la fiecare front de ceas
+    end
   endtask 
+  
 endclass

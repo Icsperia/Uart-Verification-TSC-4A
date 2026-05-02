@@ -7,51 +7,88 @@ program fifo_test(intf_uart uart, intf_valid_ready intf_valid_ready);
 class my_trans extends transaction;
     parameter DATA_WIDTH = 8;
     
-    int cnt = 0;
-    rand bit valid;
-    rand bit ready;
-
-
-
-    function void post_randomize();
-
-      $display("[TRANS] valid = %0b  | ready = %0b | cnt = %0d", 
-                valid, ready, cnt-1);
-    endfunction
+//de verificat bitul de paritate
+    rand bit [1:0] stop_type;
     
-//fifo full
 
+    // bit start = 1'b0;
+    // bit paritate;
+    // bit [1:0] stop_bits_val;
+    // bit [11:0] uart_frame;   
+    // int cnt = 0;
+// constraint c_delay_mediu{
+//     delay inside {[25 : 75]}; 
+//   }
+
+
+
+constraint c_delay_interval{
+    delay  dist { [1:2] };
+  }
+
+// constraint c_delay_mare{
+//     delay inside {[1000 : 5000]}; 
+//   }
+
+//     constraint c_stop {
+//       stop_type inside {1, 2, 3};
+//       stop_type dist {1 := 25, 2 := 25, 3:=50};
+//     }
+
+//     function void post_randomize();
+//       paritate = ^data_i; 
+      
+   
+//    if (stop_type == 1) begin
+//       stop_bits_val = 2'b01; 
+//     end else if (stop_type == 2) begin
+//       stop_bits_val = 2'b11;
+//     end else if (stop_type == 3) begin
+//       stop_bits_val = 2'b10; 
+//     end
+        
+  
+    //  uart_frame = {stop_bits_val, paritate, data_i, start};
+
+    // $display("[TRANS] valid = %0b  | ready = %0b | cnt = %0d", 
+    //              valid, ready, cnt-1);
+  //  endfunction
   endclass
+
   environment env;
   my_trans my_tr; 
   
   initial begin
     env = new(uart, intf_valid_ready);
     my_tr = new();
-    repeat(5) begin
-    my_tr.randomize();
-    $display(" Valid generat manual este %0b", my_tr.valid);
-  end
-    env.gen.repeat_count = 30;
+    
+
+    env.gen.repeat_count = 2500; 
     env.gen.trans = my_tr;
-    
-    env.run();
-$display("\n[DEBUG] Afisare continut FIFO din testbench.dut:");
-    
+        env.run();
+    $display("\n--- Generare Cadre UART (Debug Mode) ---");
+     $display("FIFO complet: %p", testbench.dut.fifo);
+//repeat(100) @(posedge uart.clk);
+    repeat(2500) begin
+     @(posedge uart.clk);
+      if (!my_tr.randomize()) $error("Randomization failed!");
+  
+   
 
-    $display("FIFO complet: %p", testbench.dut.fifo);
 
-
-    for (int i = 0; i < 30; i++) begin
-       $display("Index [%0d] = %h", i, testbench.dut.fifo[i]);
-     //  $display("Starea curenta %d", testbench.dut.current_state);
-        
-      //  $display("Date FIFO = %d", testbench.dut.fifo);
-        //$display("Current_state: %d", testbench.dut.current_state);
-
+    for (int i = 0; i < 2500; i++) begin
+        $display("Index [%0d] = %b", i, testbench.dut.fifo[i]);
+        $display("Current_state: %d", testbench.dut.current_state);
     end
-  end
+    end
 
+
+  end
 endprogram
 
 `endif
+
+//test de baudrate
+
+//pentru delay mic si valori multe generate, coverage 100
+//pentru delay mare si valiri mari coverage de 33 - 66

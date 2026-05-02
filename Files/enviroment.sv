@@ -1,97 +1,88 @@
-//-------------------------------------------------------------------------
-//						www.verificationguide.com
-//-------------------------------------------------------------------------
-
-//in mediul de verificare se instantiaza toate componentele de verificare
-//`include "transaction.sv"
-//`include "generator.sv"
-//`include "driver_valid_ready.sv"
-//`include "monitor_uart.sv"
-//`include "monitor_valid_ready.sv"
-// `include "coverage.sv"
-// `include "scoreboard.sv"
 `ifndef ENVIRONMENT_SV 
 `define ENVIRONMENT_SV
+
 class environment;
   
-  //componentele de verificare sunt declarate
-  //generator and driver instance
-  generator  gen;
-  driver_valid_ready    driv_valid_ready;
-  mon_valid_ready    mon_valid_ready;
-  mon_uart   mon_uart;
-  coverage_uart cov_uart;
-  coverage_valid_ready cov_valid_ready;
+  // --- Componentele de verificare (clasele care executa testarea) ---
   
-  //mailbox handle's
-  mailbox gen2driv;
-  mailbox mon2scb;
-  mailbox mon2cov;
-  //event for synchronization between generator and test
-  event gen_ended;
+  generator           gen;              // Creeaza tranzactiile (datele de test)
+  driver_valid_ready  driv_valid_ready; // Trimite datele create de generator catre interfata DUT-ului
+  mon_valid_ready     mon_valid_ready;  // Monitorizeaza interfata de intrare (Valid/Ready) si colecteaza datele
+  mon_uart            mon_uart;         // Monitorizeaza interfata de iesire UART (firul TX)
+  coverage_uart       cov_uart;         // Calculeaza cat de mult din protocolul UART a fost testat
+  coverage_valid_ready cov_valid_ready; // Calculeaza acoperirea pentru handshake-ul Valid/Ready
   
-  //virtual interface
-  virtual intf_uart vintf_uart;
-  virtual intf_valid_ready vintf_valid_ready;
+  // --- Canale de comunicare (Mailbox-uri) ---
   
-  //constructor
+  mailbox gen2driv; // "Cutia postala" prin care Generatorul trimite tranzactii catre Driver
+  mailbox mon2scb;  // Trimite datele capturate de monitoare catre Scoreboard (pentru verificare)
+  mailbox mon2cov;  // (Optional) Trimite date catre unitatile de coverage
+  
+  // --- Sincronizare ---
+  event gen_ended;  // Semnal care anunta restul mediului ca Generatorul a terminat de creat toate datele
+  
+  // --- Interfete Virtuale (Legatura cu hardware-ul) ---
+  virtual intf_uart vintf_uart;              // Conexiunea virtuala la semnalele UART
+  virtual intf_valid_ready vintf_valid_ready; // Conexiunea virtuala la semnalele de intrare Valid/Ready
+  
+  // --- Constructor (Initializarea mediului) ---
   function new(virtual intf_uart vintf_uart, virtual intf_valid_ready vintf_valid_ready);
-    //get the interface from test
+    // Primeste interfetele fizice de la testbench si le mapeaza la cele virtuale
     this.vintf_uart = vintf_uart;
     this.vintf_valid_ready = vintf_valid_ready;
-    //creating the mailbox (Same handle will be shared across generator and driver)
+    
+    // Aloca memorie pentru mailbox-uri (canalele de comunicare)
     gen2driv = new();
     mon2scb  = new();
 
-    cov_uart = new( );
+    // Initializeaza obiectele de coverage
+    cov_uart = new();
     cov_valid_ready = new();
-    //componentele de verificare sunt create
-    //creating generator and driver
-    gen  = new(gen2driv,gen_ended);
-    driv_valid_ready = new(vintf_valid_ready,gen2driv);
-    mon_valid_ready  = new(vintf_valid_ready,mon2scb,0, cov_valid_ready);
-   
-   
-    mon_uart = new(vintf_uart,mon2scb,0, cov_uart);
-    // scb  = new(mon2scb);
+    
+    // Instantiaza componentele si le conecteaza intre ele (injectare de dependinte)
+    gen              = new(gen2driv, gen_ended);
+    driv_valid_ready = new(vintf_valid_ready, gen2driv);
+    mon_valid_ready  = new(vintf_valid_ready, mon2scb, 0, cov_valid_ready);
+    mon_uart         = new(vintf_uart, mon2scb, 0, cov_uart);
   endfunction
   
-  //
+  // --- Task: Pregatirea testului ---
   task pre_test();            
-   driv_valid_ready.reset();
+    driv_valid_ready.reset(); // Apeleaza secventa de reset pentru a pune DUT-ul intr-o stare cunoscuta
   endtask
   
+  // --- Task: Executia principala ---
   task test();
     fork 
-    gen.main();
-    driv_valid_ready.main();
-    mon_valid_ready.main();
-    mon_uart.main();    
- 
-    join_any
+      gen.main();              // Porneste generarea datelor
+      driv_valid_ready.main(); // Porneste trimiterea datelor catre DUT
+      mon_valid_ready.main();  // Porneste monitorizarea intrarii
+      mon_uart.main();         // Porneste monitorizarea iesirii UART
+    join_any // Continua cand prima componenta (de obicei generatorul) termina
   endtask
   
+  // --- Task: Curatenia si asteptarea finalizarii ---
   task post_test();
-    wait(gen_ended.triggered);
-    //se urmareste ca toate datele generate sa fie transmise la DUT si sa ajunga si la scoreboard
-    wait(gen.repeat_count ==driv_valid_ready.no_transactions);
-    // wait(gen.repeat_count == scb.no_transactions);
-  // #4000
+    wait(gen_ended.triggered); // Asteapta pana cand generatorul spune "gata"
+    
+    // Se asigura ca numarul de date generate este egal cu numarul de date trimise fizic
+    wait(gen.repeat_count == driv_valid_ready.no_transactions);
   endtask  
   
+  // --- Functie: Raportarea rezultatelor ---
   function report();
-   mon_valid_ready.cov.print_coverage();
+    // Afiseaza in consola statisticile de coverage (cat de bine am testat design-ul)
+    mon_valid_ready.cov.print_coverage();
     mon_uart.cov.print_coverage();
   endfunction
   
-  //run task
+  // --- Task-ul principal: Executa tot fluxul de verificare ---
   task run;
-    pre_test();
-    test();
-    post_test();
-    report();
-    //linia de mai jos este necesara pentru ca simularea sa sa termine
-    $finish;
+    pre_test();  // 1. Reset
+    test();      // 2. Simulare efectiva
+    post_test(); // 3. Asteptare final
+    report();    // 4. Afisare rezultate
+    $finish;     // 5. Inchide simulatorul
   endtask
   
 endclass

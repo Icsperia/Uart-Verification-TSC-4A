@@ -1,39 +1,53 @@
 //-------------------------------------------------------------------------
-//						www.verificationguide.com
+//            www.verificationguide.com
 //-------------------------------------------------------------------------
+
 class generator;
+  // Obiectele de tip tranzactie care vor fi populate cu date aleatorii.
+  // 'trans' este obiectul principal, iar 'tr' este copia trimisa spre driver.
+  rand transaction trans, tr;
   
-  //clasa contine doua atribute de tipul "transaction"
-  rand transaction trans,tr;
+  // Variabila care determina cate pachete de date vor fi create in timpul testului.
+  int repeat_count;
   
-  //repeat_count arata numarul de tranzactii care vor fi generate
-  int  repeat_count;
-  
-  //tipul de date mailbox, care poate fi vazut ca o structura de tip coada, reprezinta "portul" prin care generatorul trimite date driver-ului.
-  //mailbox, to generate and send the packet to driver
+  // Mailbox-ul este canalul de comunicare  intre Generator si Driver.
+  // Se foloseste pentru a trimite tranzactiile generate catre Driver.
   mailbox gen2driv;
   
-  //declararea unui eveniment
+  // Eveniment utilizat pentru a anunta restul mediului de verificare 
+  // ca generatorul a terminat de creat toate tranzactiile solicitate.
   event gen_ended;
   
-  //constructor
-  function new(mailbox gen2driv,event gen_ended);
-    //getting the mailbox handle from env, in order to share the transaction packet between the generator and driver, the same mailbox is shared between both.
+  // Constructorul clasei: initializeaza conexiunile si obiectul de tranzactie.
+  function new(mailbox gen2driv, event gen_ended);
+    // Primeste handle-ul  catre mailbox si eveniment din clasa Environment.
     this.gen2driv = gen2driv;
-    this.gen_ended    = gen_ended;
+    this.gen_ended = gen_ended;
+    // Creeaza instanta obiectului de tranzactie care va fi randomizat.
     trans = new();
   endfunction
   
-  //generatorul aleatorizeaza si transmite spre exterior prin "portul" de tip mailbox continutul tranzactiilor (al caror numar este egal cu repeat_count)
-  //main task, generates(create and randomizes) the repeat_count number of transaction packets and puts into mailbox
+  // Task-ul principal care executa logica de generare.
   task main();
+    // Repeta procesul de 'repeat_count' ori.
     repeat(repeat_count) begin
-    	if( !trans.randomize() ) 
+      
+      // Aleatorizeaza variabilele marcate cu 'rand' din clasa transaction.
+      // Daca randomizarea esueaza, simularea se opreste cu o eroare fatala.
+      if( !trans.randomize() ) 
           $fatal("Gen:: trans randomization failed");      
-    	tr = trans.do_copy();
-    	gen2driv.put(tr);
+      
+      // Se face o copie a obiectului randomizat pentru a evita modificarea datelor
+      // de catre generator in timp ce driverul inca le proceseaza.
+      tr = trans.do_copy();
+      
+      // Pune copia tranzactiei in mailbox pentru a fi preluata de Driver.
+      // Operatia 'put' este blocanta daca mailbox-ul este plin.
+      gen2driv.put(tr);
     end
-    //se semnaleaza sfarsitul transmiterii datelor de catre generator
+    
+    // Dupa ce s-au generat toate tranzactiile, se declanseaza evenimentul
+    // pentru a semnaliza sfarsitul activitatii generatorului.
     ->gen_ended; 
   endtask
   

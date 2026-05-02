@@ -12,7 +12,7 @@ class driver_valid_ready;
   
   //used to count the number of transactions
   int no_transactions;
-  
+    
   //creating virtual interface handle
   virtual intf_valid_ready virtual_intf_valid_ready;
   
@@ -32,6 +32,7 @@ class driver_valid_ready;
   //Reset task, Reset the Interface signals to default/initial values
   task reset;
     wait(!virtual_intf_valid_ready.reset);
+  @(posedge virtual_intf_valid_ready.clk);
     $display("--------- [DRIVER] Reset Started ---------");
     `DRIV_IF.valid <= 0;
     `DRIV_IF.data_i <= 0;
@@ -71,21 +72,22 @@ class driver_valid_ready;
     
   //Cele doua fire de executie de mai jos ruleaza in paralel. Dupa ce primul dintre ele se termina al doilea este intrerupt automat. Daca se activeaza reset-ul, nu se mai transmit date. 
   task main;
-    forever begin
-      fork
+    forever begin //loop infinit
+    
+      fork //2 threaduri simultan
         //Thread-1: Waiting for reset
         begin
           wait(!virtual_intf_valid_ready.reset);//linie valabila daca resetul este activ in 0
           //wait(virtual_intf_valid_ready.reset);//linie valabila daca resetul este activ in 1
         end
         //Thread-2: Calling drive task
-        begin
+        begin//cat nu vine reset isi continua executia
           //transmiterea datelor se face permanent, dar este conditionta de primirea datelor de la monitor.
           forever
             drive();
         end
-      join_any
-      disable fork;
+      join_any //1 se opresete merge mai departe
+      disable fork; //restart
       reset();
     end
   endtask

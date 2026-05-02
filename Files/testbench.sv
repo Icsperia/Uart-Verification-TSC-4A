@@ -26,20 +26,22 @@
 `include "wait_trans.sv"
 `include "stop_bit.sv"
 `include "send_data_with_delay.sv"
+`include "test_reset.sv"
 //----------------------------------------------------------------
 
 
 module testbench;
   
   //clock and reset signal declaration
-  bit clk;
-  bit reset;
+logic clk;
+ logic reset;
   
   //clock generation
   always #5 clk = ~clk;
   
   //reset Generation
   initial begin
+    clk = 0;
     reset = 0;
     #15 reset = 1;
   end
@@ -50,17 +52,19 @@ module testbench;
   intf_valid_ready intf_valid_ready(clk,reset);
   //Testcase instance, interface handle is passed to test as an argument
   //test t1(intf_uart, intf_valid_ready);
-  //fifo_test t2(intf_uart, intf_valid_ready);
+  fifo_test t2(intf_uart, intf_valid_ready);
   //wait_trans t3(intf_uart, intf_valid_ready);
   //stop_bit t4(intf_uart, intf_valid_ready);
 
-  send_data_with_delay t5(intf_uart, intf_valid_ready);
+ //send_data_with_delay t5(intf_uart, intf_valid_ready);
+//reset_test t6(intf_uart, intf_valid_ready);
+ //start_bit_test t5(intf_uart, intf_valid_ready);
   //DUT instance, interface signals are connected to the DUT ports
 
 uart #(
   .DATA_WIDTH(8),
   .FIFO_DEPTH(16),
-  .BOUD_RATE(1), 
+  .BOUD_RATE(`BAUDRATE_MODE_SIMULATOR), 
   .HAS_PARITY(`PARITY_BIT_SIMULATION),
   .NO_BITS_STOP(0)
 ) dut (

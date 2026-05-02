@@ -13,6 +13,12 @@ class coverage_valid_ready #(parameter DATA_WIDTH = 8);
   covergroup transaction_cg;
     //linia de mai jos este adaugata deoarece, daca sunt mai multe instante pentru care se calculeaza coverage-ul, noi vrem sa stim pentru fiecare dintre ele, separat, ce valoare avem.
     option.per_instance = 1;
+    valid_cp : coverpoint trans_covered.valid { bins logic_1 = {1}; }
+    ready_cp : coverpoint trans_covered.ready { bins logic_1 = {1}; }
+
+    // 
+    // Verifica daca există  delay-uri (zero, mici, mari) pentru transferuri valide
+    delay_x_handshake: cross delay_cp, valid_cp, ready_cp;
   //  valid_cp: coverpoint trans_covered.valid;
     
     // adaugati adresele tuturor registrilor pe care ii aveti in DUT (sunt documentati in specificatie)
@@ -28,9 +34,12 @@ class coverage_valid_ready #(parameter DATA_WIDTH = 8);
     }
 
     delay_cp: coverpoint trans_covered.delay {
-      bins lowest_value  = {0};
-      bins low_values    = {[1 : 10]};
-      bins big_values    = {[10:$]};
+  bins zero         = {0};
+    bins small_values        = {[1 : 99]};
+    bins medium_values       = {[100 : 999]};
+    bins large_min    = {[1000 : 2500]};
+    bins large_max    = {[2501 : $]};
+    
     }
 
     // counter_cp: coverpoint trans_covered.counter {

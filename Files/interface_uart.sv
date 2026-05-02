@@ -13,12 +13,12 @@ interface intf_uart(input logic clk,reset);
     //logic [7:0] rdata;
     //semnalele din clocking block sunt ncrone cu frontul crescator de ceas
     //driver clocking block
-    
+    //interfetele leaga dutul cu celelalte componente (driver si monitoare)
     //nu avem driver la uart
     //monitor clocking block
     clocking monitor_cb @(posedge clk);
       default input #1 output #1;
-      input tx; 
+      input tx; //blocul de comunicare dintre dut si monitor
     endclocking
     
     //monitor modport  
